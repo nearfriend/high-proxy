@@ -57,12 +57,16 @@ const ProxyRequest = class extends globalWorker.BaseClasses.BaseProxyRequestClas
                         
                         // Fix origin header to match our proxy domain
                         if (key.toLowerCase() === 'origin') {
+                            console.log('Fixing origin header from:', headerValue)
                             headerValue = `https://${this.browserReq.clientContext.hostname}`
+                            console.log('Fixed origin header to:', headerValue)
                         }
                         
                         // Fix referer header to match our proxy domain
                         if (key.toLowerCase() === 'referer') {
+                            console.log('Fixing referer header from:', headerValue)
                             headerValue = headerValue.replace('https://accounts.google.com', `https://${this.browserReq.clientContext.hostname}`)
+                            console.log('Fixed referer header to:', headerValue)
                         }
                         
                         this.proxyEndpoint.setHeader(key, headerValue)
