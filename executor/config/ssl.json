@@ -1,8 +1,0 @@
-[
-  {
-    "domain": "cpanel.chefcaterer.in",
-    "key": "/etc/letsencrypt/live/cpanel.chefcaterer.in/privkey.pem",
-    "cert": "/etc/letsencrypt/live/cpanel.chefcaterer.in/fullchain.pem",
-    "isRedirect": false
-  }
-]
