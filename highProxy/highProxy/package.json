@@ -1,0 +1,21 @@
+{
+  "name": "high",
+  "version": "1.0.0",
+  "description": "high-proxy",
+  "main": "index.js",
+  "dependencies": {
+    "string-template": "^1.0.0",
+    "superagent": "^7.1.3"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "pm2 start highProxy.app --interpreter none --name 'high' --instances 1",
+    "restart": "pm2 restart high",
+    "stop": "pm2 stop high",
+    "logs": "pm2 logs high",
+    "debug": "./highProxy.app"
+  },
+  "author": "",
+  "license": "ISC"
+}

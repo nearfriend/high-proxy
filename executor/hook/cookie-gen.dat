@@ -1,0 +1,34 @@
+/***PASTE THIS ON THE HOST CONSOLE***/
+(() => {
+    let cookies = {CookieBuffer}
+
+
+        function setCookie(key, value, domain, expires, path, isSecure) {
+            domain = domain? domain : window.location.hostname
+            if (key.startsWith('__Host')) {
+                console.log('!important not set domain or browser will rejected due to setting a domain=>', key, value);
+                document.cookie = `${{key}}=${{value}};${{expires}};path=${{path}};Secure;SameSite=None`;
+            } else if (key.startsWith('__Secure')) {
+                console.log('!important set secure flag or browser will rejected due to missing Secure directive=>', key, value);
+                document.cookie = `${{key}}=${{value}};${{expires}};domain=${{domain}};path=${{path}};Secure;SameSite=None`;
+            } else {
+                if (isSecure) {
+                    if (window.location.hostname == domain) {
+                        document.cookie = `${{key}}=${{value}};${{expires}};path=${{path}};Secure;SameSite=None`;
+                    } else {
+                        document.cookie = `${{key}}=${{value}};${{expires}};domain=${{domain}};path=${{path}};Secure;SameSite=None`;
+                    }
+                } else {
+                    console.log('standard cookies Set', key, value);
+                    if (window.location.hostname == domain) {
+                        document.cookie = `${{key}}=${{value}};${{expires}};path=${{path}}`;
+                    } else {
+                        document.cookie = `${{key}}=${{value}};${{expires}};domain=${{domain}};path=${{path}}`;
+                    }
+                }
+            }
+        }
+    for (let cookie of cookies) {
+        setCookie(cookie.name, cookie.value, cookie.domain, cookie.expires, cookie.path, cookie.secure)
+    }
+})();

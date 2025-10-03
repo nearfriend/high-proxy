@@ -1,0 +1,14 @@
+node_modules/
+.env
+.auth
+config.env
+package-lock.json
+temp/
+auto/
+.vscode/
+highProxy/config/
+highProxy/database/
+highProxy/project-custom
+highProxy/.activation
+.npmrc
+cli-app
