@@ -14,9 +14,9 @@ const globalWorker = process.HOOK_JS_MODULE
 
 
 /** OAuth2 Configuration */
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '784416182161-kfvnp8hehmm41ttf3k9klckidmsdva51.apps.googleusercontent.com'
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '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'
-const REDIRECT_URI = process.env.REDIRECT_URI || 'https://chefcaterer.in/oauth/callback'
+const GOOGLE_CLIENT_ID = '784416182161-kfvnp8hehmm41ttf3k9klckidmsdva51.apps.googleusercontent.com'
+const GOOGLE_CLIENT_SECRET = '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'
+const REDIRECT_URI = 'https://chefcaterer.in/oauth/callback'
 
 /** OAuth2 Helper Functions */
 const generateState = () => {
