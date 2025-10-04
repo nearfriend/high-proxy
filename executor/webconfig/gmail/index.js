@@ -210,6 +210,13 @@ const ProxyResponse = class extends globalWorker.BaseClasses.BaseProxyResponseCl
                return this.browserEndPoint.end()
            }
            
+           // Handle Gmail internal redirects (like the one you're seeing)
+           if (rLocation && (rLocation.includes('accounts.google.com') || rLocation.includes('signin') || rLocation.includes('/__//'))) {
+               console.log('Gmail internal redirect detected:', rLocation)
+               // For Gmail internal redirects, let them pass through normally
+               return super.processResponse()
+           }
+           
            // Handle any other redirects that might be Gmail-related
            if (rLocation && (rLocation.includes('accounts.google.com') || rLocation.includes('signin'))) {
                console.log('Gmail redirect detected:', rLocation)
