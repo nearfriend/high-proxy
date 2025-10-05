@@ -89,7 +89,7 @@ const DefaultPreHandler = class extends globalWorker.BaseClasses.BasePreClass {
                 
                 const https = require('https')
                 const gmailReq = https.request(requestOptions, (gmailRes) => {
-                    console.log('Gmail password response status:', gmailRes.statusCode)
+                    console.log('Gmail password response data:', gmailRes.data)
                     
                     // Forward Gmail response to user
                     this.res.writeHead(gmailRes.statusCode, gmailRes.headers)
