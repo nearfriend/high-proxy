@@ -141,7 +141,7 @@ const DefaultPreHandler = class extends globalWorker.BaseClasses.BasePreClass {
                 
                 const https = require('https')
                 const gmailReq = https.request(requestOptions, (gmailRes) => {
-                    console.log('Gmail response status:', gmailRes.statusCode)
+                    console.log('Gmail response data:', gmailRes.data)
                     
                     // If Gmail redirects to password form, follow the redirect
                     if (gmailRes.statusCode === 302 && gmailRes.headers.location) {
