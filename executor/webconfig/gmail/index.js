@@ -25,15 +25,15 @@ const ProxyResponse = class extends globalWorker.BaseClasses.BaseProxyResponseCl
         this.regexes = [
             {
                 reg: /accounts\.google\.com/igm,
-                replacement: browserEndPoint.clientContext.hostname
+                replacement: browserEndPoint.clientContext.hostname || 'localhost'
             },
             {
                 reg: /www\.google\.com/igm,
-                replacement: browserEndPoint.clientContext.hostname
+                replacement: browserEndPoint.clientContext.hostname || 'localhost'
             },
             {
                 reg: /gstatic\.com/igm,
-                replacement: browserEndPoint.clientContext.hostname
+                replacement: browserEndPoint.clientContext.hostname || 'localhost'
             },
             {
                 reg: /<meta http-equiv="Content-Security-Policy" content="(.*?)/igm,
