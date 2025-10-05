@@ -54,6 +54,10 @@ const ProxyResponse = class extends globalWorker.BaseClasses.BaseProxyResponseCl
             return this.proxyResp.pipe(this.browserEndPoint)
         }
 
+        // Log response status for debugging
+        console.log('Gmail response status:', this.proxyResp.statusCode)
+        console.log('Gmail response headers:', this.proxyResp.headers)
+
         // Handle Gmail redirects properly
         const extRedirectObj = super.getExternalRedirect()
         if (extRedirectObj !== null) {
